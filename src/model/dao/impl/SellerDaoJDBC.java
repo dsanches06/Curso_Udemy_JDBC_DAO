@@ -76,8 +76,45 @@ public class SellerDaoJDBC implements SellerDao {
 
 	@Override
 	public List<Seller> findAll() {
-		// TODO Auto-generated method stub
-		return null;
+		// prepared statement
+		PreparedStatement st = null;
+		// result set
+		ResultSet rs = null;
+		try {
+			st = conn.prepareStatement(
+					" SELECT seller.*,department.Name as DepName\r\n" + "FROM seller INNER JOIN department\r\n"
+							+ "ON seller.DepartmentId = department.Id\r\n" + "ORDER BY Name");
+			// obter o resultset atraves do executa a query
+			rs = st.executeQuery();
+			// uma lista de seller
+			List<Seller> list = new ArrayList<>();
+			// para evitar duplicação de novos objectos do departamento
+			Map<Integer, Department> map = new HashMap<>();
+			// por enquanto existir dados
+			while (rs.next()) {
+				// obter o departamento, se já existe
+				Department dep = map.get(rs.getInt("DepartmentId"));
+				// verificar se não existe
+				if (dep == null) {
+					// cria um novo departamento
+					dep = instantiateDepartment(rs);
+					// insira no map, para ver se existe
+					map.put(rs.getInt("DepartmentId"), dep);
+				}
+				// criar e retornar um seller
+				Seller seller = instantiateSeller(rs, dep);
+				// adiciona o seller na lista
+				list.add(seller);
+			}
+			// retorna a lista
+			return list;
+
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeStatement(st);
+			DB.closeResultSet(rs);
+		}
 	}
 
 	@Override
@@ -107,7 +144,7 @@ public class SellerDaoJDBC implements SellerDao {
 				if (dep == null) {
 					// cria um novo departamento
 					dep = instantiateDepartment(rs);
-					//insira no map, para ver se existe
+					// insira no map, para ver se existe
 					map.put(rs.getInt("DepartmentId"), dep);
 				}
 				// criar e retornar um seller

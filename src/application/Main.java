@@ -35,6 +35,13 @@ public class Main {
 		Seller newSeller = new Seller("Bruno Carvalho", "bruno@scp.pt", new Date(), 30000.00, department);
 		sellerDao.insert(newSeller);
 		System.out.println("Inserted! New id = "+newSeller.getId());
+		
+		System.out.println("\n=== TEST 5: seller update ===");
+		seller = sellerDao.findById(2);
+		seller.setBaseSalary(100.0);
+		seller.setName("Bruce Wayne");
+		sellerDao.update(seller);
+		System.out.println("Updated completed!");
 
 	}
 }

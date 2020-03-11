@@ -4,7 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import db.DB;
 import db.DbException;
@@ -77,6 +80,52 @@ public class SellerDaoJDBC implements SellerDao {
 		return null;
 	}
 
+	@Override
+	public List<Seller> findByDepartment(Department department) {
+		// prepared statement
+		PreparedStatement st = null;
+		// result set
+		ResultSet rs = null;
+		//
+		try {
+			st = conn.prepareStatement(
+					" SELECT seller.*,department.Name as DepName " + "FROM seller INNER JOIN department "
+							+ "ON seller.DepartmentId = department.Id " + "WHERE DepartmentId = ? " + "ORDER BY Name");
+			// atribuir o valor de ?
+			st.setInt(1, department.getId());
+			// obter o resultset atraves do executa a query
+			rs = st.executeQuery();
+			// uma lista de seller
+			List<Seller> list = new ArrayList<>();
+			// para evitar duplicação de novos objectos do departamento
+			Map<Integer, Department> map = new HashMap<>();
+			// por enquanto existir dados
+			while (rs.next()) {
+				// obter o departamento, se já existe
+				Department dep = map.get(rs.getInt("DepartmentId"));
+				// verificar se não existe
+				if (dep == null) {
+					// cria um novo departamento
+					dep = instantiateDepartment(rs);
+					//insira no map, para ver se existe
+					map.put(rs.getInt("DepartmentId"), dep);
+				}
+				// criar e retornar um seller
+				Seller seller = instantiateSeller(rs, dep);
+				// adiciona o seller na lista
+				list.add(seller);
+			}
+			// retorna a lista
+			return list;
+
+		} catch (SQLException e) {
+			throw new DbException(e.getMessage());
+		} finally {
+			DB.closeStatement(st);
+			DB.closeResultSet(rs);
+		}
+	}
+
 	private Seller instantiateSeller(ResultSet rs, Department dep) throws SQLException {
 		Seller obj = new Seller();
 		obj.setId(rs.getInt("Id"));
@@ -94,4 +143,5 @@ public class SellerDaoJDBC implements SellerDao {
 		dep.setName(rs.getString("DepName"));
 		return dep;
 	}
+
 }
